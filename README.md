@@ -4,7 +4,11 @@ A "tiny" 9kb (non-minified version) Markdown JS ES6+ parser with `Async/Await` a
 
 ## Basic technical information
 
-Built in support for prismjs, prismcss and DOMpurify by automatically checking if they're loaded and if so, applying them to the output.
+Built in support for prismjs, prismcss and DOMpurify by automatically checking if they're loaded and if so, applying them to the output. It also has built in support for measurement data, allowing you to see and check the complete network chain and load times of each markdown file.
+
+**Loading the parser:** is simple, just add it to a `script` tag within your document like this; `<script src="parser.js"></script>` and you're done.
+
+Loops through the document to find any and all `data-md-src` within a `div` tag to loada and render one or more markdown document. **Example:** `<div data-md-src="document.md"></div>` and yes, you can assign whatever class you want to this without the parser interferring.
 
 * Asynchronous Handling (Async/Await): The code utilizes async function and await fetch() (introduced in ES2017) to handle asynchronous data seamlessly without getting stuck in complex callback chains.
 
@@ -14,4 +18,4 @@ Built in support for prismjs, prismcss and DOMpurify by automatically checking i
 
 ## Questions? Feedback?
 
-Let me know, happy to discuss. A "how to use" guide will come shortly.
+Let me know, happy to discuss.
