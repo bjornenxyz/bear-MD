@@ -18,12 +18,12 @@ Loops through the document to find any and all `data-md-src` within a `div` tag 
 
 ## Built in functions
 
-* Headers (Six Levels): Converts standard Markdown hash symbols (# through ######) into their corresponding HTML heading tags (<h1> through <h6>).
-* Blockquotes: Detects lines starting with > and wraps them in a blockquote tag with a custom class (<blockquote class='md-quote'>).
-* Unordered Lists: Automatically opens, populates, and closes bulleted lists (<ul> and <li class='md-list-item'>) when lines start with - or *.
-* Paragraphs: Groups any standard text lines into individual paragraphs wrapped in <p class='md-paragraph'>.
-* Line Breaks: Converts regular single newlines into HTML line breaks (<br>) within specific text blocks.
-* Custom Containers (Divs & Spans): Parses a unique ::: syntax for block containers (<div>) and :: for inline containers (<span>), allowing you to assign custom CSS classes using a hyphen prefix (e.g., ::: -my-class).
+* Headers (Six Levels): Converts standard Markdown hash symbols (`#` through `######`) into their corresponding HTML heading tags (`<h1>` through `<h6>`).
+* Blockquotes
+* Unordered Lists: Automatically opens, populates, and closes bulleted lists (`<ul>` and `<li class='md-list-item'>`) when lines start with `-` or `*`.
+* Paragraphs: Groups any standard text lines into individual paragraphs wrapped in `<p class='md-paragraph'>`.
+* Line Breaks: Converts regular single newlines into HTML line breaks within specific text blocks.
+* Custom Containers (divs & span): Parses a unique `:::` syntax for block containers (<div>) and `::` for inline containers (<span>), allowing you to assign custom CSS classes using a hyphen prefix (e.g., `::: -my-class :::`).
 * Bold and Italic Styling: Supports triple underscores (___text___) for bold-italic combination, double asterisks (**text**) for strong/bold text, and single asterisks (*text*) for emphasized/italic text.
 * Strikethrough: Converts double tildes (~~text~~) into HTML <del> tags to represent deleted or crossed-out text.
 * Inline Code: Detects single backticks (`code`) and wraps the content in a custom styled inline code tag (<code class='md-inline-code'>).
