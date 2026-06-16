@@ -14,20 +14,7 @@ Loops through the document to find any and all `data-md-src` within a `div` tag 
 * Modern Loops (for...of): The mdParse function utilizes `for(let l of s.split("\n"))`. This `for...of` syntax.
 
 ## Built in functions
-* Headers (Six Levels): Converts standard Markdown hash symbols (`#` through `######`) into their corresponding HTML heading tags (`<h1>` through `<h6>`).
-* Blockquotes
-* Unordered Lists: Automatically opens, populates, and closes bulleted lists (`<ul>` and `<li class='md-list-item'>`) when lines start with `-` or `*`.
-* Paragraphs: Groups any standard text lines into individual paragraphs wrapped in `<p class='md-paragraph'>`.
-* Line Breaks: Converts regular single newlines into HTML line breaks within specific text blocks.
-* Custom Containers (divs & span): Parses a unique `:::` syntax for block containers (<div>) and `::` for inline containers (<span>), allowing you to assign custom CSS classes using a hyphen prefix (e.g., `::: -my-class :::`).
-* Bold and Italic Styling: Supports triple underscores (___text___) for bold-italic combination, double asterisks (**text**) for strong/bold text, and single asterisks (*text*) for emphasized/italic text.
-* Strikethrough: Converts double tildes (~~text~~) into HTML <del> tags to represent deleted or crossed-out text.
-* Inline Code: Detects single backticks and wraps the content in a custom styled inline code tag.
-* Code Blocks with Language Support: Parses triple backtick blocks into structural blocks, automatically extracting the language name into a CSS class for syntax highlighting.
-* HTML Character Escaping: Safely escapes special characters (&, <, >) inside code blocks to prevent the browser from rendering them as actual HTML tags.
-* External and Internal Links: Separates links into two categories. Standard markdown links [Label](URL) get a general link class, while links prefixed with "extl" [Label](extl URL) automatically receive `target='_blank'`, `rel='noopener noreferrer'`, and a specific external link class.
-* Horizontal Rules: Converts a single line containing exactly three hyphens into a styled thematic break.
-* Memory Caching System: Stores fully parsed HTML elements in a local memory object (cache) using the source URL as a key, preventing duplicate network requests and rendering files instantly on subsequent clicks.
+* External and Internal Links: Separates links into two categories. Standard markdown links `[Label](URL)` get a general link class, while links prefixed with "extl" `[Label](extl URL)` automatically receive `target='_blank'`, `rel='noopener noreferrer'`, and a specific external link class.
 * Performance Tracking: Implements high-precision browser timing (performance.mark and performance.measure) to calculate and log the exact millisecond duration of the network fetch and the rendering process.
 * Asynchronous Lazy Loading: Uses a non-blocking architecture that allows multiple containers on a single page to fetch, parse, and display their individual Markdown sources simultaneously.
 
