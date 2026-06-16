@@ -27,9 +27,9 @@ Loops through the document to find any and all `data-md-src` within a `div` tag 
 * Bold and Italic Styling: Supports triple underscores (___text___) for bold-italic combination, double asterisks (**text**) for strong/bold text, and single asterisks (*text*) for emphasized/italic text.
 * Strikethrough: Converts double tildes (~~text~~) into HTML <del> tags to represent deleted or crossed-out text.
 * Inline Code: Detects single backticks (`code`) and wraps the content in a custom styled inline code tag (<code class='md-inline-code'>).
-* Code Blocks with Language Support: Parses triple backtick blocks (```js) into structural <pre> and <code> blocks, automatically extracting the language name into a CSS class for syntax highlighting.
+* Code Blocks with Language Support: Parses triple backtick blocks into structural <pre> and <code> blocks, automatically extracting the language name into a CSS class for syntax highlighting.
 * HTML Character Escaping: Safely escapes special characters (&, <, >) inside code blocks to prevent the browser from rendering them as actual HTML tags.
-* External and Internal Links: Separates links into two categories. Standard markdown links [Label](URL) get a general link class, while links prefixed with "extl" [Label](extl URL) automatically receive target='_blank', rel='noopener noreferrer', and a specific external link class.
+* External and Internal Links: Separates links into two categories. Standard markdown links [Label](URL) get a general link class, while links prefixed with "extl" [Label](extl URL) automatically receive `target='_blank'`, `rel='noopener noreferrer'`, and a specific external link class.
 * Horizontal Rules: Converts a single line containing exactly three hyphens (---) into a styled thematic break (<hr class='md-hr'/>).
 * Memory Caching System: Stores fully parsed HTML elements in a local memory object (cache) using the source URL as a key, preventing duplicate network requests and rendering files instantly on subsequent clicks.
 * Performance Tracking: Implements high-precision browser timing (performance.mark and performance.measure) to calculate and log the exact millisecond duration of the network fetch and the rendering process.
