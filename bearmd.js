@@ -1,256 +1,214 @@
 (function(){
 const cache = {};
-const consoleLogShown = {purify: false, prism: false};
-const M={
-p(t){return t.replace(/\n/g,"<br>")},
-h(t,s=false){
-let e=t.split("\n");
-let r=[];
-let listMode=null;
-let tableMode=false;
-
-const closeList=()=>{
-if(listMode) r.push(`</${listMode}>`);
-listMode=null;
-};
-
-const openList=(mode)=>{
-if(listMode===mode) return;
-closeList();
-r.push(`<${mode}>`);
-listMode=mode;
-};
-
-const parseTableLine=(line)=>{
-let s=line.trim();
-if(s.startsWith("|")) s=s.slice(1);
-if(s.endsWith("|")) s=s.slice(0,-1);
-return s.split("|").map(c=>c.trim());
-};
-
-const looksLikeTableSep=(cells)=>{
+const M = {
+escapeHtml(t){
+return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+},
+inline(t){
+t = t.replace(/\r/g,"");
+t = this.escapeHtml(t);
+t = t.replace(/___([\s\S]+?)___/g,"<strong><em>$1</em></strong>");
+t = t.replace(/\*\*([\s\S]+?)\*\*/g,"<strong>$1</strong>");
+t = t.replace(/(^|[^*])\*([^\s*][\s\S]*?[^\s*])\*(?!\*)/g,"$1<em>$2</em>");
+t = t.replace(/~~([\s\S]+?)~~/g,"<del>$1</del>");
+t = t.replace(/`([^`]+)`/g,"<code>$1</code>");
+t = t.replace(/\[([^\]]*?)\]\(extl\s+([^\)]*?)\)/g,(a,b,c)=>"<a href='"+c+"' target='_blank' rel='noopener noreferrer'>"+b+"</a>");
+t = t.replace(/\[([^\]]*?)\]\(([^\)]*?)\)/g,(a,b,c)=>"<a href='"+c+"'>"+b+"</a>");
+t = t.replace(/^---$/gm,"<hr />");
+return t;
+},
+parseBlockAttrs(line){
+if(line.startsWith(":::")) {
+let m = line.match(/^:::\s*(-?[\w-]+)?\s+([\s\S]+?)\s+:::$/);
+if(m) return {tag: "div", className: m[1] ? m[1].replace(/^-/, "") : "", content: m[2]};
+}
+let m = line.match(/^\|\|(?:\s+(-?[\w-]+))?\s+([\s\S]+?)\s+\|\|$/);
+if(m) return {tag: "section", className: m[1] ? m[1].replace(/^-/, "") : "", content: m[2]};
+return null;
+},
+parseTableLine(line){
+let s = line.trim();
+if(s.startsWith("|")) s = s.slice(1);
+if(s.endsWith("|")) s = s.slice(0,-1);
+return s.split("|").map(c => c.trim());
+},
+looksLikeTableSep(cells){
 if(!cells.length) return false;
 for(let i=0;i<cells.length;i++){
-let c=cells[i].replace(/\s/g,'');
+let c = cells[i].replace(/\s/g,'');
 if(!c) return false;
 if(!/^:?-{3,}:?$/.test(c)) return false;
 }
 return true;
+},
+renderBlocks(t){
+const lines = t.replace(/\r/g,"").split("\n");
+const out = [];
+let i = 0;
+let listMode = null;
+const closeList = () => {
+if(listMode){
+out.push(`</${listMode}>`);
+listMode = null;
+}};
+const flushParagraph = (buf) => {
+const text = buf.join(" ").replace(/\s+/g," ").trim();
+if(text) out.push(`<p>${this.inline(text)}</p>`);
 };
-
-for(let i=0;i<e.length;i++){
-let l=e[i].trim();
-
-if(l.startsWith("###### ")){closeList(); if(tableMode){r.push("</table>"); tableMode=false} r.push("<h6>"+this.i(l.slice(7))+"</h6>"); continue}
-if(l.startsWith("##### ")){closeList(); if(tableMode){r.push("</table>"); tableMode=false} r.push("<h5>"+this.i(l.slice(6))+"</h5>"); continue}
-if(l.startsWith("#### ")){closeList(); if(tableMode){r.push("</table>"); tableMode=false} r.push("<h4>"+this.i(l.slice(5))+"</h4>"); continue}
-if(l.startsWith("### ")){closeList(); if(tableMode){r.push("</table>"); tableMode=false} r.push("<h3>"+this.i(l.slice(4))+"</h3>"); continue}
-if(l.startsWith("## ")){closeList(); if(tableMode){r.push("</table>"); tableMode=false} r.push("<h2>"+this.i(l.slice(3))+"</h2>"); continue}
-if(l.startsWith("# ")){closeList(); if(tableMode){r.push("</table>"); tableMode=false} r.push("<h1>"+this.i(l.slice(2))+"</h1>"); continue}
-
-if(l.startsWith("> ")){closeList(); if(tableMode){r.push("</table>"); tableMode=false} r.push("<blockquote>"+this.p(l.slice(2))+"</blockquote>"); continue}
-
-if(l.startsWith("- ")||l.startsWith("* ")){
-openList("ul");
-if(tableMode){r.push("</table>"); tableMode=false}
-r.push("<li>"+this.i(l.slice(2))+"</li>");
-continue;
-}
-
-const mo=l.match(/^(\d+)\.\s+(.*)$/);
-if(mo){
-openList("ol");
-if(tableMode){r.push("</table>"); tableMode=false}
-r.push("<li>"+this.i(mo[2])+"</li>");
-continue;
-}
-
-if(!l.trim()){
-if(tableMode){r.push("</table>"); tableMode=false}
-closeList();
-continue;
-}
-
-let possibleHeader=null;
-let possibleSep=null;
-
-if(l.includes("|") && i+1<e.length){
-possibleHeader=parseTableLine(l);
-let nextLine=e[i+1].trim();
-if(nextLine.includes("|")){
-possibleSep=parseTableLine(nextLine);
-if(looksLikeTableSep(possibleSep)){
-closeList();
-r.push("<table><thead><tr>");
-for(let c=0;c<possibleHeader.length;c++){
-r.push("<th>"+this.i(possibleHeader[c])+"</th>");
-}
-r.push("</tr></thead><tbody>");
-tableMode=true;
+while(i < lines.length){
+let line = lines[i].trim();
+if(!line){
 i++;
-for(i=i+1;i<e.length;i++){
-let rowLine=e[i].trim();
-if(!rowLine.includes("|") || !rowLine.trim()){
+continue;
+}
+if(line.startsWith("```")){
+closeList();
+let lang = line.slice(3).trim();
+let code = [];
+i++;
+while(i < lines.length && !lines[i].trim().startsWith("```")){
+code.push(lines[i]);
+i++;
+}
+if(i < lines.length) i++;
+out.push(`<pre><code class="language-${lang}">${this.escapeHtml(code.join("\n"))}</code></pre>`);
+continue;
+}
+if(/^#{1,6}\s+/.test(line)){
+closeList();
+let level = line.match(/^#{1,6}/)[0].length;
+out.push(`<h${level}>${this.inline(line.slice(level).trim())}</h${level}>`);
+i++;
+continue;
+}
+if(line.startsWith("> ")){
+closeList();
+out.push(`<blockquote>${this.inline(line.slice(2).trim())}</blockquote>`);
+i++;
+continue;
+}
+const block = this.parseBlockAttrs(line);
+if(block){
+closeList();
+out.push(`<${block.tag}${block.className ? ` class="${block.className}"` : ""}>${this.inline(block.content.trim())}</${block.tag}>`);
+i++;
+continue;
+}
+if(line.startsWith("- ") || line.startsWith("* ")){
+if(listMode !== "ul"){
+closeList();
+out.push("<ul>");
+listMode = "ul";
+}
+out.push(`<li>${this.inline(line.slice(2).trim())}</li>`);
+i++;
+continue;
+}
+const ol = line.match(/^(\d+)\.\s+(.*)$/);
+if(ol){
+if(listMode !== "ol"){
+closeList();
+out.push("<ol>");
+listMode = "ol";
+}
+out.push(`<li>${this.inline(ol[2].trim())}</li>`);
+i++;
+continue;
+}
+if(line.includes("|") && i + 1 < lines.length){
+const header = this.parseTableLine(line);
+const sep = this.parseTableLine(lines[i+1].trim());
+if(this.looksLikeTableSep(sep)){
+closeList();
+out.push("<table><thead><tr>");
+for(let c=0;c<header.length;c++){
+out.push(`<th>${this.inline(header[c])}</th>`);
+}
+out.push("</tr></thead><tbody>");
+i += 2;
+while(i < lines.length){
+let rowLine = lines[i].trim();
+if(!rowLine || !rowLine.includes("|")) break;
+let rowCells = this.parseTableLine(rowLine);
+out.push("<tr>");
+for(let c=0;c<header.length;c++){
+let cell = rowCells[c] !== undefined ? rowCells[c] : "";
+out.push(`<td>${this.inline(cell)}</td>`);
+}
+out.push("</tr>");
+i++;
+}
+out.push("</tbody></table>");
+continue;
+}}
+closeList();
+let para = [line];
+i++;
+while(i < lines.length){
+let next = lines[i].trim();
+if(!next) break;
+if(
+/^#{1,6}\s+/.test(next) ||
+next.startsWith("> ") ||
+next.startsWith("- ") ||
+next.startsWith("* ") ||
+/^(\d+)\.\s+/.test(next) ||
+next.startsWith("```") ||
+this.parseBlockAttrs(next) ||
+(next.includes("|") && i + 1 < lines.length && this.looksLikeTableSep(this.parseTableLine(lines[i+1].trim())))
+){
 break;
 }
-let rowCells=parseTableLine(rowLine);
-r.push("<tr>");
-for(let c=0;c<possibleHeader.length;c++){
-let cell=rowCells[c]!==undefined?rowCells[c]:"";
-r.push("<td>"+this.i(cell)+"</td>");
+para.push(next);
+i++;
 }
-r.push("</tr>");
+flushParagraph(para);
 }
-r.push("</tbody></table>");
-tableMode=false;
-continue;
-}}}
-
 closeList();
-r.push("<p>"+this.i(l)+"</p>");
+return out.join("");
+},
+parse(s){
+s = (s || "").trim();
+return this.renderBlocks(s);
 }
-
-if(tableMode) r.push("</table>");
-closeList();
-return r.join("");
-},
-i(t){
-t=t.replace(/:::(?:\s+(-?[\w-]+))?\s+(.+?)\s+:::/g,(match,classPart,content)=>{
-const className=classPart?classPart.trim().replace(/^-/,''):'';
-return className?'<div class="'+className+'">'+content.trim()+'</div>':'<div>'+content.trim()+'</div>';
-});
-t=t.replace(/::(?:\s+(-?[\w-]+))?\s+(.+?)\s+::/g,(match,classPart,content)=>{
-const className=classPart?classPart.trim().replace(/^-/,''):'';
-return className?'<span class="'+className+'">'+content.trim()+'</span>':'<span>'+content.trim()+'</span>';
-});
-t=t.replace(/___(.*?)___/g,"<strong><em>$1</em></strong>");
-t=t.replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
-t=t.replace(/\*(.*?)\*/g,"<em>$1</em>");
-t=t.replace(/~~(.*?)~~/g,"<del>$1</del>");
-t=t.replace(/`([^`]+)`/g,"<code>$1</code>");
-t=t.replace(/\[([^\]]*)\]\(extl\s+([^\)]*)\)/g,(a,b,c)=>"<a href='"+c+"' target='_blank' rel='noopener noreferrer'>"+b+"</a>");
-t=t.replace(/\[([^\]]*)\]\(([^\)]*)\)/g,(a,b,c)=>"<a href='"+c+"'>"+b+"</a>");
-t=t.replace(/^---$/gm,"<hr />");
-return t;
-},
-escapeCode(t){
-return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}};
+};
 function mdParse(s){
-s=s.trim();
-let o="",code=false,block="";
-let codeLang = "";
-for(let l of s.split("\n")){
-if(l.startsWith("```")){
-if(code){
-o+='<pre><code class="language-'+codeLang+'">' +M.escapeCode(block.trim())+'</code></pre>';
-block="";
-code=false;
-codeLang = "";
-} else {
-codeLang = l.slice(3).trim();
-if(block.trim()){o+=M.h(block,false)}
-code=true;
-block="";
-}} else if (code){
-block+=l+"\n";
-} else {
-block+=l+"\n";
-}}
-if (block.trim())o+=M.h(block,!o.includes("<ul>"));
-return M.i(o);
+return M.parse(s);
 }
 async function loadAndRender(div){
 const src = div.getAttribute("data-md-src");
 if(src === null) return null;
-console.log(`%c[DEBUG] Laddning påbörjad: ${src}`, "color: #6c757d;");
 try {
-if (cache[src]){
-console.log(`%c✓ CACHE HIT: ${src} - hämtas från minne`, "color: #28a745; font-weight: bold;");
+if(cache[src]){
 div.innerHTML = cache[src];
 div.classList.remove("md-loading");
 div.classList.add("md-loaded");
 setTimeout(() => {
-if (typeof Prism !== "undefined" && typeof Prism.highlightAllUnder === "function") {
-if (!consoleLogShown.prism) {
-console.log(`%c✓ Prism.js aktiverad`, "font-weight: bold; color: #17a2b8;");
-consoleLogShown.prism = true;
-}
-Prism.highlightAllUnder(div);
-}}, 0);
-console.log(`%c[CACHE STATUS] Antal filer i cache: ${Object.keys(cache).length}`, "color: #6c757d;");
+if(typeof Prism !== "undefined" && typeof Prism.highlightAllUnder === "function") Prism.highlightAllUnder(div);
+}, 0);
 return cache[src];
-} else {
-console.log(`%c✗ CACHE MISS: ${src} - hämtas från nätverk`, "color: #ffc107; font-weight: bold;");
 }
-const totalMarkStart = `total-start-${src}`;
-const fetchMarkStart = `fetch-start-${src}`;
-const fetchMarkEnd = `fetch-end-${src}`;
-const renderMarkStart = `render-start-${src}`;
-const renderMarkEnd = `render-end-${src}`;
-const totalMarkEnd = `total-end-${src}`;
-performance.mark(totalMarkStart);
-performance.mark(fetchMarkStart);
 div.classList.add("md-loading");
 const response = await fetch(src);
-performance.mark(fetchMarkEnd);
-if (!response.ok) throw new Error(`HTTP ${response.status}`);
+if(!response.ok) throw new Error(`HTTP ${response.status}`);
 const rawMd = await response.text();
-performance.mark(renderMarkStart);
 const html = mdParse(rawMd);
 let finalHtml = html;
-if (typeof DOMPurify !== "undefined") {
-if (!consoleLogShown.purify) {
-console.log(`%c✓ DOMPurify ${DOMPurify.version || "loaded"} aktiverad`, "font-weight: bold; color: #28a745;");
-consoleLogShown.purify = true;
-}
+if(typeof DOMPurify !== "undefined"){
 finalHtml = DOMPurify.sanitize(html, {
 ADD_ATTR: ['target', 'rel'],
 ADD_TAGS: []
 });
-} else {
-if (!consoleLogShown.warn) {
-console.warn("%c⚠ DOMPurify saknas", "font-weight: bold; color: #ffc107; background: #000; padding: 2px 6px;");
-consoleLogShown.warn = true;
-}
-finalHtml = html;
 }
 cache[src] = finalHtml;
 div.innerHTML = finalHtml;
 setTimeout(() => {
-if (typeof Prism !== "undefined" && typeof Prism.highlightAllUnder === "function") {
-if (!consoleLogShown.prism) {
-console.log(`%c✓ Prism.js aktiverad — kodblock får syntax-highlighting (${Prism.version || "latest"})`, "font-weight: bold; color: #17a2b8;");
-consoleLogShown.prism = true;
-}
-Prism.highlightAllUnder(div);
-}}, 0);
-performance.mark(renderMarkEnd);
-performance.mark(totalMarkEnd);
-const netDur = performance.measure(`Nätverk (Hämta): ${src}`, fetchMarkStart, fetchMarkEnd).duration;
-const rendDur = performance.measure(`Rendering (Parse+DOM): ${src}`, renderMarkStart, renderMarkEnd).duration;
-const totDur = performance.measure(`TOTALTID: ${src}`, totalMarkStart, totalMarkEnd).duration;
-console.log(
-`%c[${new Date().toLocaleTimeString()}] ${src}`+
-`%c\n%cNätverk:   ${netDur.toFixed(2)} ms`+
-`%c\n%cRendering: ${rendDur.toFixed(2)} ms`+
-`%c\n%cTotal tid: ${totDur.toFixed(2)} ms`+
-`%c\n%cCACHE STATUS: ${Object.keys(cache).length} filer i cache`,
-"font-weight: bold; color: #007bff;",
-"",
-"color: #28a745;",
-"",
-"color: #ffc107;",
-"",
-"font-weight: bold; color: #dc3545;",
-"",
-"color: #6c757d;"
-);
+if(typeof Prism !== "undefined" && typeof Prism.highlightAllUnder === "function") Prism.highlightAllUnder(div);
+}, 0);
 div.classList.remove("md-loading");
 div.classList.add("md-loaded");
 return rawMd;
 } catch (err) {
-console.error(`%cMD Load Error för ${src}:`, "color: #dc3545; font-weight: bold;", err);
 div.textContent = "Error loading: " + src;
 div.classList.remove("md-loading");
 div.classList.add("md-error");
@@ -261,7 +219,6 @@ const divs = document.querySelectorAll("[data-md-src]");
 const lazyObserver = new IntersectionObserver((entries, observer) => {
 entries.forEach(entry => {
 if(entry.isIntersecting){
-console.log(`%c[Lazy Load Triggered] ${entry.target.getAttribute("data-md-src")}`, "color: #17a2b8; font-weight: bold;");
 loadAndRender(entry.target);
 observer.unobserve(entry.target);
 }});
